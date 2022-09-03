@@ -28,3 +28,6 @@ def get_webcam_fps(webcam_id):
     fps = int(camera.get(cv2.CAP_PROP_FPS))
     camera.release()
     return fps
+
+def process_monitor_frame(frame):
+    return frame
