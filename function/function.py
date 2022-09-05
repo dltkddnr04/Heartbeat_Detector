@@ -29,5 +29,14 @@ def get_webcam_fps(webcam_id):
     camera.release()
     return fps
 
+def get_camera(id):
+    return cv2.VideoCapture(id)
+
+def get_camera_frame(camera):
+    ret, frame = camera.read()
+    if not ret:
+        return None
+    return frame
+
 def process_monitor_frame(frame):
     return frame

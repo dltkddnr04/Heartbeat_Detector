@@ -62,7 +62,7 @@ class GUI(QWidget):
         groupbox = QGroupBox('상태')
         grid = QGridLayout()
 
-        self.tracking_status = QLabel('트래킹 상태 {}'.format('🟢'))
+        self.tracking_status = QLabel('트래킹 상태 {}'.format('🔴'))
         self.heartbeat_rate = QLabel('심박수 {}bpm'.format(0))
 
         grid.addWidget(self.tracking_status, 0, 0)
