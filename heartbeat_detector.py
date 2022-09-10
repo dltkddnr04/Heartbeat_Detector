@@ -1,8 +1,35 @@
 import sys
 from function import (function)
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QWidget, QGroupBox, QComboBox, QLabel)
-from PyQt5.QtGui import (QPixmap, QColor)
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget, QGroupBox, QComboBox, QLabel
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 import PyQt5.QtWidgets as qtwid
+import numpy as np
+import cv2
+
+class VideoThread(QThread):
+    change_pixmap_signal = pyqtSignal(np.ndarray)
+
+    def __init__(self):
+        super().__init__()
+        self._run_flag = True
+        self.camrea_id = 0
+
+    def run(self):
+        # capture from web cam
+        cap = function.get_camera(self.camrea_id)
+        while self._run_flag:
+            pre_process_frame = function.get_camera_frame(cap)
+            processed_frame = function.process_monitor_frame(pre_process_frame)
+            self.change_pixmap_signal.emit(processed_frame)
+        # shut down capture system
+        cap.release()
+
+    def stop(self):
+        self._run_flag = False
+        self.wait()
+
 
 class GUI(QWidget):
     def __init__(self):
@@ -18,6 +45,12 @@ class GUI(QWidget):
         self.setWindowTitle('Heartbeat Detector')
         self.show()
 
+        self.disply_width = 256
+        self.display_height = 256
+        self.thread = VideoThread()
+        self.thread.change_pixmap_signal.connect(self.update_image)
+        self.thread.start()
+
     def camera_display(self):
         groupbox = QGroupBox()
         grid = QGridLayout()
@@ -29,7 +62,6 @@ class GUI(QWidget):
         self.image_label.setPixmap(grey)
 
         grid.addWidget(self.image_label, 0, 0)
-
         groupbox.setLayout(grid)
         return groupbox
 
@@ -106,6 +138,25 @@ class GUI(QWidget):
         self.info_graphic_button.setText("그래픽 출력 시작")
         self.info_graphic_button.clicked.connect(self.info_graphic_start)
         return
+
+    def closeEvent(self, event):
+        self.thread.stop()
+        event.accept()
+
+    @pyqtSlot(np.ndarray)
+    def update_image(self, cv_img):
+        """Updates the image_label with a new opencv image"""
+        qt_img = self.convert_cv_qt(cv_img)
+        self.image_label.setPixmap(qt_img)
+    
+    def convert_cv_qt(self, cv_img):
+        """Convert from an opencv image to QPixmap"""
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        p = convert_to_Qt_format.scaled(self.disply_width, self.display_height, Qt.KeepAspectRatio)
+        return QPixmap.fromImage(p)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -39,4 +39,13 @@ def get_camera_frame(camera):
     return frame
 
 def process_monitor_frame(frame):
+    # crop image to square and resize to 256x256
+    height, width, _ = frame.shape
+    if height > width:
+        crop = int((height - width) / 2)
+        frame = frame[crop:height - crop, 0:width]
+    else:
+        crop = int((width - height) / 2)
+        frame = frame[0:height, crop:width - crop]
+    frame = cv2.resize(frame, (256, 256))
     return frame
