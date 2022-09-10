@@ -40,6 +40,8 @@ def get_camera_frame(camera):
 
 def process_monitor_frame(frame):
     # crop image to square and resize to 256x256
+    frame = cv2.resize(frame, (480, 270))
+    '''
     height, width, _ = frame.shape
     if height > width:
         crop = int((height - width) / 2)
@@ -47,5 +49,27 @@ def process_monitor_frame(frame):
     else:
         crop = int((width - height) / 2)
         frame = frame[0:height, crop:width - crop]
+    '''
+    frame = face_tracking(frame)
     frame = cv2.resize(frame, (256, 256))
+    return frame
+
+def face_tracking(frame):
+    # face detection
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    
+    # crop face with 10% margin
+    if len(faces) > 0:
+        x, y, w, h = faces[0]
+        margin = int(0.1 * w)
+        x = x - margin
+        y = y - margin
+        w = w + 2 * margin
+        h = h + 2 * margin
+        frame = frame[y:y + h, x:x + w]
+
     return frame
